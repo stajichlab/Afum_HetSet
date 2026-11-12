@@ -36,9 +36,9 @@ def load(calls, fractions):
 
 def draw(rows, fr, cols, title, out):
     n, m = len(rows), len(cols)
-    fig = plt.figure(figsize=(max(9, 0.34 * m + 4.2), max(5, 0.16 * n + 3)))
-    gs = fig.add_gridspec(2, 3, width_ratios=[2.6, 1.0, m * 0.34], height_ratios=[2.2, n * 0.16], wspace=0.02, hspace=0.02,
-                          left=0.02, right=0.99, top=0.93, bottom=0.03)
+    fig = plt.figure(figsize=(max(9, 0.34 * m + 4.2), max(5, 0.16 * n + 3.6)))
+    gs = fig.add_gridspec(2, 3, width_ratios=[2.6, 1.0, m * 0.34], height_ratios=[1.3, n * 0.16], wspace=0.02, hspace=0.02,
+                          left=0.02, right=0.99, top=0.945, bottom=0.075)
     ax = fig.add_subplot(gs[1, 2]); axb = fig.add_subplot(gs[0, 2], sharex=ax); axk = fig.add_subplot(gs[1, 1], sharey=ax); axt = fig.add_subplot(gs[1, 0], sharey=ax)
     fig.add_subplot(gs[0, 0]).axis("off"); fig.add_subplot(gs[0, 1]).axis("off")
     ax.set_xlim(-0.5, m - 0.5); ax.set_ylim(n - 0.5, -0.5)
@@ -67,7 +67,7 @@ def draw(rows, fr, cols, title, out):
     cut = [j for j in range(2, m) if fams[j - 1] != fams[j - 2]]
     for j in [1] + cut:
         ax.axvline(j - 0.5, color="#50625f", linewidth=0.8); axb.axvline(j - 0.5, color="#50625f", linewidth=0.8)
-    ax.set_xticks(xcol); ax.set_xticklabels(["bafA (AF293-type)"] + cols[1:], rotation=90, fontsize=6.5); ax.set_yticks([])
+    ax.set_xticks(xcol); ax.set_xticklabels(["bafA AF293"] + cols[1:], rotation=90, fontsize=6.5); ax.set_yticks([])
     ax.tick_params(length=0)
     axb.bar(xcol, counts, color="#0b5a63", width=0.7); axb.set_ylim(0, max(max(counts), 1) * 1.25); axb.tick_params(axis="x", labelbottom=False, length=0)
     axb.set_ylabel("isolates present", fontsize=6.5); axb.tick_params(axis="y", labelsize=6)
@@ -95,7 +95,7 @@ def draw(rows, fr, cols, title, out):
         axb.text(sum(idx) / len(idx), axb.get_ylim()[1] * 1.0, fam, ha="center", va="bottom", fontsize=6.5, color="#50625f", clip_on=False)
     axb.text(0, axb.get_ylim()[1], "bafA", ha="center", va="bottom", fontsize=6.5, color="#50625f", clip_on=False)
     fig.suptitle(title, x=0.02, ha="left", fontsize=11, fontweight="bold")
-    fig.text(0.02, 0.005, "Tint = fraction of specific hashes found. Solid = present, dashed italic = partial (upper bound).", fontsize=6, color="#50625f")
+    fig.text(0.02, 0.006, "Tint = fraction of specific hashes found. Solid = present; dashed, italic = partial (upper bound).", fontsize=6, color="#50625f", ha="left")
     fig.savefig(out + ".png", dpi=200); fig.savefig(out + ".pdf"); plt.close(fig)
 
 
