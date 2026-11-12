@@ -44,12 +44,16 @@ def test_extra_screen(tmp_path):
     write(tmp_path / "screen.tsv", ["sample_id", "target", "hits"], [dict(sample_id="S1", target="bafA_all", hits=0), dict(sample_id="S2", target="bafA_all", hits=0)])
     write(tmp_path / "x.tsv", ["sample_id", "target", "fraction", "call"],
           [dict(sample_id="S1", target="SBc002", fraction="0.9", call="present"), dict(sample_id="S2", target="SBc002", fraction="0.3", call="partial"), dict(sample_id="S1", target="SBc001", fraction="0.0", call="absent")])
-    write(tmp_path / "xt.tsv", ["target", "status"], [dict(target="SBc002", status="usable"), dict(target="SBc001", status="usable")])
+    write(tmp_path / "xt.tsv", ["target", "status", "length", "specific_hashes", "present_isolates"],
+          [dict(target="SBc002", status="uncertain", length="50000", specific_hashes="12", present_isolates="2500"), dict(target="SBc001", status="usable", length="9000", specific_hashes="30", present_isolates="7")])
     t.main(["--calls", str(tmp_path / "calls.tsv"), "--baf-screen", str(tmp_path / "screen.tsv"), "--prefix", "eAF", "--extra-screen", str(tmp_path / "x.tsv"),
-            "--extra-targets", str(tmp_path / "xt.tsv"), "--out", str(tmp_path / "o")])
+            "--extra-targets", str(tmp_path / "xt.tsv"), "--heatmap", "heatmap", "--out", str(tmp_path / "o")])
     out = {r["strain"]: r for r in csv.DictReader(open(tmp_path / "o" / "calls.tsv"), delimiter="\t")}
     assert list(out["eAF1"])[-2:] == ["SBc001", "SBc002"] and out["eAF1"]["SBc002"] == "P" and out["eAF2"]["SBc002"] == "p" and out["eAF1"]["n_starbase_present"] == "1"
     assert out["eAF1"]["n_present"] == "0"                                                  # Table S21 count unchanged by the extras
     fr = {r["strain"]: r for r in csv.DictReader(open(tmp_path / "o" / "fractions.tsv"), delimiter="\t")}
     assert fr["eAF2"]["SBc002"] == "0.3"
-    assert "SBc002" in (tmp_path / "o" / "table.md").read_text()
+    md = (tmp_path / "o" / "table.md").read_text()
+    assert "## Starbase targets" in md and "| SBc002 | uncertain | 50 | 12 | 2,500 | 1 | 1 | " in md       # per-target section with store-wide prevalence
+    assert "Starbase targets present |" in md and "| 1 | SBc002? |" in md                          # per-strain list, ? marks uncertain
+    assert "[![" in md and "(heatmap.png)](heatmap.pdf)" in md

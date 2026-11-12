@@ -50,19 +50,20 @@ def call(r, e, tuned):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--calls", required=True); ap.add_argument("--baf-screen", required=True); ap.add_argument("--prefix", required=True)
-    ap.add_argument("--extra-screen"); ap.add_argument("--extra-targets"); ap.add_argument("--set", nargs="*", default=[]); ap.add_argument("--title", default=None); ap.add_argument("--out", required=True)
+    ap.add_argument("--extra-screen"); ap.add_argument("--extra-targets"); ap.add_argument("--heatmap", help="basename of OUT/<name>.png and .pdf (strain_starship_heatmap.py) to embed in table.md"); ap.add_argument("--set", nargs="*", default=[]); ap.add_argument("--title", default=None); ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     tuned = {k: float(v) for k, v in (x.split("=") for x in a.set)}
     hits = load_baf(a.baf_screen)
     rows = [r for r in csv.DictReader(open(a.calls), delimiter="\t") if r["strain"].startswith(a.prefix) and not r["excluded"]]
     els = [c[:-5] for c in rows[0] if c.endswith("_call")] if rows else []
     els = sorted(els, key=lambda e: (e != "bafA", e.split("-")[0], e))
-    xels = []
+    xels, xmeta = [], {}
     if a.extra_screen:
         xs = {}
         for r in csv.DictReader(open(a.extra_screen), delimiter="\t"):
             xs[(r["sample_id"], r["target"])] = (r["fraction"], {"present": "P", "partial": "p"}.get(r["call"], "-"))
-        xels = sorted(r["target"] for r in csv.DictReader(open(a.extra_targets), delimiter="\t"))
+        xmeta = {r["target"]: r for r in csv.DictReader(open(a.extra_targets), delimiter="\t")}
+        xels = sorted(xmeta)
         for r in rows:
             for x in xels:
                 r[x + "_frac"], r[x + "_call"] = xs.get((r["sample_id"], x), ("0", "-"))
@@ -100,18 +101,28 @@ def main(argv=None):
         f.write(f"# {title}: Starship screen\n\n{len(rows)} isolates ({len(local)} local, counted but not listed), {len(clones)} clone groups (ANI 0.9995). "
                 "Calls from the solo-hash rescreen: P present, p partial (an upper bound), - absent."
                 + (" Cuts raised: " + ", ".join(f"{k} {v}" for k, v in tuned.items()) + "." if tuned else "") + "\n\n")
+        if a.heatmap:
+            f.write(f"[![{title}: strains by Starship]({a.heatmap}.png)]({a.heatmap}.pdf)\n\nHeatmap: tint is the fraction of the element's specific hashes found; solid cells are present, dashed are partial. The PNG links to the PDF.\n\n")
         f.write("## bafA, all alleles\n\nThe `bafA` column below is the AF293-type allele (in the hrmA cluster). The all-alleles screen also finds divergent copies that sit outside that cluster:\n\n"
                 "| bafA class | Isolates | Clone groups |\n|---|---:|---:|\n")
         names = dict(cluster_linked="cluster-linked (AF293-type target present)", standalone_divergent="standalone divergent (all-alleles screen only)", none="no bafA")
         for k in kinds:
             f.write(f"| {names[k]} | {bsum[k][0]} | {bsum[k][1]} of {len(clones)} |\n")
         f.write("\n## Per element\n\n| Element | Present | Partial | Absent | Clone groups present |\n|---|---:|---:|---:|---:|\n")
-        for e, p, pp, ab, cp, ct in summ:
+        for e, p, pp, ab, cp, ct in summ[:len(els)]:
             f.write(f"| {e} | {p} | {pp} | {ab} | {cp} of {ct} |\n")
-        f.write("\n## Per strain\n\n| Strain | Lineage | Clone | bafA class | n | Present elements |" + (" Starbase n |" if xels else "") + "\n|---|---|---|---|---:|---|" + ("---:|" if xels else "") + "\n")
+        if xels:
+            f.write("\n## Starbase targets\n\nOne representative per Starbase cluster that has none of our haplotypes, with at least 10 specific hashes and not core-like (`starbase_usable.py`). "
+                    "`uncertain` marks widespread targets that may or may not be real accessory elements. Store-wide is the count of isolates called present in the 4,849-isolate screen. "
+                    "No truth set exists for these targets, so every call is unvalidated.\n\n"
+                    "| Target | Status | Length (kb) | Specific hashes | Store-wide isolates | eAF present | eAF partial | eAF clone groups |\n|---|---|---:|---:|---:|---:|---:|---:|\n")
+            for e, p, pp, ab, cp, ct in summ[len(els):]:
+                m = xmeta[e]
+                f.write(f"| {e} | {m.get('status', '')} | {int(m['length']) / 1000:.0f} | {m['specific_hashes']} | {int(m['present_isolates']):,} | {p} | {pp} | {cp} of {ct} |\n")
+        f.write("\n## Per strain\n\n| Strain | Lineage | Clone | bafA class | n | Present elements |" + (" Starbase n | Starbase targets present |" if xels else "") + "\n|---|---|---|---|---:|---|" + ("---:|---|" if xels else "") + "\n")
         for r in shown:
             pres = [e for e in els if cs[r["sample_id"]][e] == "P"]
-            f.write(f"| {r['strain']} | {r['lineage']} | {r['clone']} | {cls[r['sample_id']].replace('_', ' ')} | {len(pres)} | {', '.join(pres)} |" + (f" {sum(cs[r['sample_id']][x] == 'P' for x in xels)} |" if xels else "") + "\n")
+            f.write(f"| {r['strain']} | {r['lineage']} | {r['clone']} | {cls[r['sample_id']].replace('_', ' ')} | {len(pres)} | {', '.join(pres)} |" + (f" {sum(cs[r['sample_id']][x] == 'P' for x in xels)} | {', '.join(x + ('?' if xmeta[x].get('status') == 'uncertain' else '') for x in xels if cs[r['sample_id']][x] == 'P')} |" if xels else "") + "\n")
     print(f"{len(rows)} isolates ({len(local)} local), {len(clones)} clone groups; bafA classes " + ", ".join(f"{k} {bsum[k][0]}" for k in kinds))
 
 
