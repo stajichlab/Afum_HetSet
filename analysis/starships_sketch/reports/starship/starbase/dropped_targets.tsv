@@ -1,0 +1,45 @@
+target	cluster	length	specific_hashes	present_isolates	cont_Af293	cont_A1163	members	members_with_captain	members_curated	reason
+SBc010	10	87942	1	346	0.05	0.783	17	0	1	fewer than 10 specific hashes
+SBc015	15	27807	2	3	0.072	0.967	14	0	2	fewer than 10 specific hashes
+SBc019	19	37042	5	3308	0.392	0.987	10	0	0	fewer than 10 specific hashes
+SBc022	22	17048	0	0	0.045	1.0	8	0	0	fewer than 10 specific hashes
+SBc028	28	57580	1	28	0.819	0.505	7	0	0	fewer than 10 specific hashes
+SBc030	30	14755	17	4524	0.935	0.957	7	0	0	core-like (widespread, in both references)
+SBc031	31	52364	0	0	0.008	0.115	6	0	0	fewer than 10 specific hashes
+SBc037	37	35539	2	14	0.066	0.067	5	0	0	fewer than 10 specific hashes
+SBc040	40	24278	7	51	0.504	0.782	5	0	0	fewer than 10 specific hashes
+SBc041	41	2653	1	585	0.985	0.985	5	0	0	fewer than 10 specific hashes
+SBc044	44	53843	6	33	0.114	0.53	4	0	1	fewer than 10 specific hashes
+SBc045	45	225226	220	4629	0.944	0.986	4	0	0	core-like (widespread, in both references)
+SBc053	53	26159	1	32	0.058	0.039	3	0	0	fewer than 10 specific hashes
+SBc056	56	21642	0	0	0.055	0.999	3	0	0	fewer than 10 specific hashes
+SBc057	57	16609	0	0	0.999	0.667	3	0	0	fewer than 10 specific hashes
+SBc061	61	14634	7	127	0.25	0.261	2	0	1	fewer than 10 specific hashes
+SBc063	63	64765	0	0	0.024	0.007	2	0	0	fewer than 10 specific hashes
+SBc067	67	145441	1	367	0.986	0.403	2	0	0	fewer than 10 specific hashes
+SBc070	70	53221	0	0	0.001	0.001	2	0	0	fewer than 10 specific hashes
+SBc074	74	24237	0	0	0.462	0.508	2	0	0	fewer than 10 specific hashes
+SBc080	80	132692	1342	0	0.001	0.0	1	0	1	present in no isolate
+SBc082	82	77662	4	27	0.043	0.062	1	0	0	fewer than 10 specific hashes
+SBc092	92	112271	1	2	0.139	0.186	1	0	0	fewer than 10 specific hashes
+SBc093	93	49420	0	0	0.098	0.416	1	0	0	fewer than 10 specific hashes
+SBc098	98	138512	35	0	0.96	0.095	1	0	0	present in no isolate
+SBc099	99	59267	5	0	0.943	0.345	1	0	0	fewer than 10 specific hashes
+SBc100	100	69164	31	4490	0.94	0.982	1	0	0	core-like (widespread, in both references)
+SBc101	101	15547	0	0	0.003	0.003	1	0	0	fewer than 10 specific hashes
+SBc103	103	670091	404	4645	0.97	0.983	1	0	0	core-like (widespread, in both references)
+SBc105	105	15349	0	0	0.029	0.954	1	0	0	fewer than 10 specific hashes
+SBc106	106	48216	5	53	0.982	0.017	1	0	0	fewer than 10 specific hashes
+SBc108	108	20922	24	2071	0.875	1.0	1	0	0	probably core (widespread, mostly in both references)
+SBc109	109	134633	0	0	0.061	0.126	1	0	1	fewer than 10 specific hashes
+SBc110	110	141375	9	42	0.023	0.029	1	0	0	fewer than 10 specific hashes
+SBc118	118	45548	0	0	0.02	0.138	1	0	0	fewer than 10 specific hashes
+SBc119	119	36894	78	3506	1.0	0.841	1	0	0	probably core (widespread, mostly in both references)
+SBc120	120	67407	3	2747	0.647	0.435	1	0	0	fewer than 10 specific hashes
+SBc125	125	23040	1	233	0.419	0.962	1	0	0	fewer than 10 specific hashes
+SBc130	130	47645	0	0	0.035	0.821	1	0	1	fewer than 10 specific hashes
+SBc135	135	28462	2	3	0.107	0.016	1	0	0	fewer than 10 specific hashes
+SBc137	137	5505	0	0	0.961	0.02	1	0	0	fewer than 10 specific hashes
+SBc138	138	2652	3	145	0.852	0.859	1	0	0	fewer than 10 specific hashes
+SBc140	140	9790	1	4	0.185	0.177	1	0	0	fewer than 10 specific hashes
+SBc141	141	117123	161	4558	0.999	0.928	1	0	0	core-like (widespread, in both references)

@@ -10,6 +10,9 @@ Local (Population_Genomics) isolates are counted in the summary but never named 
     strain_starship_table.py --calls starship_calls_wide.tsv --baf-screen STORE/query/screen_baf_family/screen.tsv --prefix eAF \
         --set Osiris-h3=0.7 Janus-h4=0.7 --title "eAF strains (PRJNA991533)" --out eAF_table
 
+--extra-screen / --extra-targets add more targets (for example the Starbase representatives from starbase_usable.py) as extra columns after the Table S21 ones;
+the call is taken from the screen's own present/partial/absent call, and `n_starbase_present` counts the extra targets.
+
 --set raises the present cut for an element (as in starship_dynamics.py): a call is P at fraction >= cut, p between 0.2 and the cut, - below 0.2; it only tightens.
 """
 import argparse
@@ -47,32 +50,41 @@ def call(r, e, tuned):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--calls", required=True); ap.add_argument("--baf-screen", required=True); ap.add_argument("--prefix", required=True)
-    ap.add_argument("--set", nargs="*", default=[]); ap.add_argument("--title", default=None); ap.add_argument("--out", required=True)
+    ap.add_argument("--extra-screen"); ap.add_argument("--extra-targets"); ap.add_argument("--set", nargs="*", default=[]); ap.add_argument("--title", default=None); ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     tuned = {k: float(v) for k, v in (x.split("=") for x in a.set)}
     hits = load_baf(a.baf_screen)
     rows = [r for r in csv.DictReader(open(a.calls), delimiter="\t") if r["strain"].startswith(a.prefix) and not r["excluded"]]
     els = [c[:-5] for c in rows[0] if c.endswith("_call")] if rows else []
     els = sorted(els, key=lambda e: (e != "bafA", e.split("-")[0], e))
+    xels = []
+    if a.extra_screen:
+        xs = {}
+        for r in csv.DictReader(open(a.extra_screen), delimiter="\t"):
+            xs[(r["sample_id"], r["target"])] = (r["fraction"], {"present": "P", "partial": "p"}.get(r["call"], "-"))
+        xels = sorted(r["target"] for r in csv.DictReader(open(a.extra_targets), delimiter="\t"))
+        for r in rows:
+            for x in xels:
+                r[x + "_frac"], r[x + "_call"] = xs.get((r["sample_id"], x), ("0", "-"))
     local = [r for r in rows if r["source"] == "local"]
     shown = sorted([r for r in rows if r["source"] != "local"],
                    key=lambda r: (int(r["lineage"]) if r["lineage"].isdigit() else 9999, int(r["clone"]) if r["clone"].isdigit() else 99999, r["strain"]))
     os.makedirs(a.out, exist_ok=True)
     cls = {r["sample_id"]: baf_class(r, hits) for r in rows}
-    cs = {r["sample_id"]: {e: call(r, e, tuned) for e in els} for r in rows}
-    head = ["strain", "sample_id", "clone", "lineage", "n_present", "present_elements", "bafA_all_hits", "bafA_class"]
+    cs = {r["sample_id"]: {e: call(r, e, tuned) for e in els + xels} for r in rows}
+    head = ["strain", "sample_id", "clone", "lineage", "n_present", "present_elements", "bafA_all_hits", "bafA_class"] + (["n_starbase_present"] if xels else [])
     with open(f"{a.out}/calls.tsv", "w", newline="") as f, open(f"{a.out}/fractions.tsv", "w", newline="") as g:
         w = csv.writer(f, delimiter="\t", lineterminator="\n"); w2 = csv.writer(g, delimiter="\t", lineterminator="\n")
-        w.writerow(head + els); w2.writerow(["strain", "sample_id", "clone", "lineage"] + els)
+        w.writerow(head + els + xels); w2.writerow(["strain", "sample_id", "clone", "lineage"] + els + xels)
         for r in shown:
             c = cs[r["sample_id"]]; pres = [e for e in els if c[e] == "P"]
-            w.writerow([r["strain"], r["sample_id"], r["clone"], r["lineage"], len(pres), ";".join(pres), hits.get(r["sample_id"], 0), cls[r["sample_id"]]] + [c[e] for e in els])
-            w2.writerow([r["strain"], r["sample_id"], r["clone"], r["lineage"]] + [r[e + "_frac"] for e in els])
+            w.writerow([r["strain"], r["sample_id"], r["clone"], r["lineage"], len(pres), ";".join(pres), hits.get(r["sample_id"], 0), cls[r["sample_id"]]] + ([sum(c[x] == "P" for x in xels)] if xels else []) + [c[e] for e in els + xels])
+            w2.writerow([r["strain"], r["sample_id"], r["clone"], r["lineage"]] + [r[e + "_frac"] for e in els + xels])
     clones = collections.defaultdict(list)
     for r in rows:
         clones[r["clone"] or "solo:" + r["sample_id"]].append(r)
     summ = []
-    for e in els:
+    for e in els + xels:
         n = collections.Counter(cs[r["sample_id"]][e] for r in rows)
         summ.append([e, n["P"], n["p"], n["-"], sum(1 for v in clones.values() if sum(cs[r["sample_id"]][e] == "P" for r in v) * 2 > len(v)), len(clones)])
     kinds = ("cluster_linked", "standalone_divergent", "none")
@@ -96,10 +108,10 @@ def main(argv=None):
         f.write("\n## Per element\n\n| Element | Present | Partial | Absent | Clone groups present |\n|---|---:|---:|---:|---:|\n")
         for e, p, pp, ab, cp, ct in summ:
             f.write(f"| {e} | {p} | {pp} | {ab} | {cp} of {ct} |\n")
-        f.write("\n## Per strain\n\n| Strain | Lineage | Clone | bafA class | n | Present elements |\n|---|---|---|---|---:|---|\n")
+        f.write("\n## Per strain\n\n| Strain | Lineage | Clone | bafA class | n | Present elements |" + (" Starbase n |" if xels else "") + "\n|---|---|---|---|---:|---|" + ("---:|" if xels else "") + "\n")
         for r in shown:
             pres = [e for e in els if cs[r["sample_id"]][e] == "P"]
-            f.write(f"| {r['strain']} | {r['lineage']} | {r['clone']} | {cls[r['sample_id']].replace('_', ' ')} | {len(pres)} | {', '.join(pres)} |\n")
+            f.write(f"| {r['strain']} | {r['lineage']} | {r['clone']} | {cls[r['sample_id']].replace('_', ' ')} | {len(pres)} | {', '.join(pres)} |" + (f" {sum(cs[r['sample_id']][x] == 'P' for x in xels)} |" if xels else "") + "\n")
     print(f"{len(rows)} isolates ({len(local)} local), {len(clones)} clone groups; bafA classes " + ", ".join(f"{k} {bsum[k][0]}" for k in kinds))
 
 

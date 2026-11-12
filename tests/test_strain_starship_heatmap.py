@@ -27,3 +27,16 @@ def test_heatmap(tmp_path):
     assert cols == ["bafA", "Janus-h1", "Janus-h2", "Lamia-h1"]
     h.main(["--calls", str(tmp_path / "calls.tsv"), "--fractions", str(tmp_path / "fractions.tsv"), "--title", "t", "--out", str(tmp_path / "hm")])
     assert (tmp_path / "hm.png").stat().st_size > 5000 and (tmp_path / "hm.pdf").read_bytes().startswith(b"%PDF")
+
+
+def test_heatmap_with_starbase_columns(tmp_path):
+    meta = ["strain", "sample_id", "clone", "lineage", "n_present", "present_elements", "bafA_all_hits", "bafA_class", "n_starbase_present"]
+    els = ["bafA", "Janus-h1", "SBc002", "SBc010"]
+    rows = [dict(strain="eAF1", sample_id="S1", clone="3", lineage="28", n_present="1", present_elements="Janus-h1", bafA_all_hits="0", bafA_class="none", n_starbase_present="1",
+                 bafA="-", **{"Janus-h1": "P", "SBc002": "P", "SBc010": "-"})]
+    write(tmp_path / "calls.tsv", meta + els, rows)
+    write(tmp_path / "fractions.tsv", ["strain", "sample_id", "clone", "lineage"] + els, [dict(strain="eAF1", sample_id="S1", clone="3", lineage="28", bafA="0", **{"Janus-h1": "0.9", "SBc002": "0.8", "SBc010": "0"})])
+    loaded, fr, cols, _ = h.load(str(tmp_path / "calls.tsv"), str(tmp_path / "fractions.tsv"))
+    assert cols == ["bafA", "Janus-h1", "SBc002", "SBc010"] and h.family("SBc002") == "Starbase" and h.family("Janus-h1") == "Janus"
+    h.main(["--calls", str(tmp_path / "calls.tsv"), "--fractions", str(tmp_path / "fractions.tsv"), "--out", str(tmp_path / "hm")])
+    assert (tmp_path / "hm.png").stat().st_size > 5000

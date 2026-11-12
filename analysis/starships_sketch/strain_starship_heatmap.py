@@ -16,10 +16,14 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
 
-META = ("strain", "sample_id", "clone", "lineage", "n_present", "present_elements", "bafA_all_hits", "bafA_class")
+META = ("strain", "sample_id", "clone", "lineage", "n_present", "present_elements", "bafA_all_hits", "bafA_class", "n_starbase_present")
 CMAP = LinearSegmentedColormap.from_list("hash", ["#e8f1f2", "#0b5a63"])
 KCOL = {"cluster_linked": "#3d3fa8", "standalone_divergent": "#c9831f"}
 KTXT = {"cluster_linked": "cluster", "standalone_divergent": "standalone"}
+
+
+def family(c):
+    return "Starbase" if c.startswith("SBc") else c.split("-")[0]
 
 
 def num(v):
@@ -36,13 +40,13 @@ def load(calls, fractions):
 
 def draw(rows, fr, cols, title, out):
     n, m = len(rows), len(cols)
-    fig = plt.figure(figsize=(max(9, 0.34 * m + 4.2), max(5, 0.16 * n + 3.6)))
-    gs = fig.add_gridspec(2, 3, width_ratios=[2.6, 1.0, m * 0.34], height_ratios=[1.3, n * 0.16], wspace=0.02, hspace=0.02,
+    fig = plt.figure(figsize=(max(9, 0.30 * m + 4.2), max(5, 0.16 * n + 3.6)))
+    gs = fig.add_gridspec(2, 3, width_ratios=[2.6, 1.0, m * 0.30], height_ratios=[1.3, n * 0.16], wspace=0.02, hspace=0.02,
                           left=0.02, right=0.99, top=0.945, bottom=0.075)
     ax = fig.add_subplot(gs[1, 2]); axb = fig.add_subplot(gs[0, 2], sharex=ax); axk = fig.add_subplot(gs[1, 1], sharey=ax); axt = fig.add_subplot(gs[1, 0], sharey=ax)
     fig.add_subplot(gs[0, 0]).axis("off"); fig.add_subplot(gs[0, 1]).axis("off")
     ax.set_xlim(-0.5, m - 0.5); ax.set_ylim(n - 0.5, -0.5)
-    fams = [c.split("-")[0] for c in cols[1:]]
+    fams = [family(c) for c in cols[1:]]
     xcol = list(range(m))
     counts = [0] * m
     for i, r in enumerate(rows):
