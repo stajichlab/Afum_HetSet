@@ -34,3 +34,22 @@ def test_table(tmp_path):
     md = (tmp_path / "o" / "table.md").read_text()
     assert "SECRET" not in md and "local__" not in md and "4 isolates (1 local, counted but not listed)" in md
     assert "SECRET" not in (tmp_path / "o" / "calls.tsv").read_text() and "SECRET" not in (tmp_path / "o" / "fractions.tsv").read_text()
+
+
+def test_extra_screen(tmp_path):
+    cols = ["sample_id", "strain", "source", "excluded", "clone", "lineage", "bafA_frac", "bafA_call"]
+    rows = [dict(sample_id="S1", strain="eAF1", source="public", excluded="", clone="1", lineage="150", bafA_frac="0", bafA_call="-"),
+            dict(sample_id="S2", strain="eAF2", source="public", excluded="", clone="2", lineage="150", bafA_frac="0", bafA_call="-")]
+    write(tmp_path / "calls.tsv", cols, rows)
+    write(tmp_path / "screen.tsv", ["sample_id", "target", "hits"], [dict(sample_id="S1", target="bafA_all", hits=0), dict(sample_id="S2", target="bafA_all", hits=0)])
+    write(tmp_path / "x.tsv", ["sample_id", "target", "fraction", "call"],
+          [dict(sample_id="S1", target="SBc002", fraction="0.9", call="present"), dict(sample_id="S2", target="SBc002", fraction="0.3", call="partial"), dict(sample_id="S1", target="SBc001", fraction="0.0", call="absent")])
+    write(tmp_path / "xt.tsv", ["target", "status"], [dict(target="SBc002", status="usable"), dict(target="SBc001", status="usable")])
+    t.main(["--calls", str(tmp_path / "calls.tsv"), "--baf-screen", str(tmp_path / "screen.tsv"), "--prefix", "eAF", "--extra-screen", str(tmp_path / "x.tsv"),
+            "--extra-targets", str(tmp_path / "xt.tsv"), "--out", str(tmp_path / "o")])
+    out = {r["strain"]: r for r in csv.DictReader(open(tmp_path / "o" / "calls.tsv"), delimiter="\t")}
+    assert list(out["eAF1"])[-2:] == ["SBc001", "SBc002"] and out["eAF1"]["SBc002"] == "P" and out["eAF2"]["SBc002"] == "p" and out["eAF1"]["n_starbase_present"] == "1"
+    assert out["eAF1"]["n_present"] == "0"                                                  # Table S21 count unchanged by the extras
+    fr = {r["strain"]: r for r in csv.DictReader(open(tmp_path / "o" / "fractions.tsv"), delimiter="\t")}
+    assert fr["eAF2"]["SBc002"] == "0.3"
+    assert "SBc002" in (tmp_path / "o" / "table.md").read_text()
